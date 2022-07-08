@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gumtree Figures</title>
+<style>
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons that are used to open the tab content */
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.btm-quartile {
+    background-color: #fbb;
+}
+
+.new-listing {
+    background-color: #bfb;
+}
+
+.seems-sold {
+    background-color: #ffb;
+}
+
+.sort-asc {
+    background-color: #ddd;
+}
+.sort-desc {
+    background-color: #ddd;
+}
+.table-header {
+    font-weight: bold;
+}
+
+
+</style>
+</head>
+<body>
+
+<script>
+    const MS_IN_DAY = 60 * 60000 * 24;
+
+    /**
+     *
+     * @param dateStr YYMMDD HHMM
+     * @returns {number} milliseconds since the epoch
+     */
+    function toDate(dateStr) {
+        let day_component = Date.parse("20" + dateStr.substr(0, 2) + "-" + dateStr.substr(2, 2) + "-" + dateStr.substr(4, 2));
+        let hours = parseInt(dateStr.substr(7, 2)) * 60 * 60000;
+        let minutes = parseInt(dateStr.substr(9, 2)) * 60000;
+        return minutes + hours + day_component
+    }
+
+    function htmlToElement(html) {
+        var template = document.createElement('template');
+        html = html.trim(); // Never return a text node of whitespace as the result
+        template.innerHTML = html;
+        return template.content.firstChild;
+    }
+
+    function findDecileArray(anon_copy) {
+        anon_copy.sort((a, b) => a - b);
+        let deciles = Array(10);
+        for (let i = 0; i < 10; ++i)
+            deciles[i] = anon_copy[parseInt(anon_copy.length * i / 10)];
+        return deciles;
+    }
+
+    function removeChildren(leafNode) {
+        while (leafNode.firstChild) {
+            leafNode.removeChild(leafNode.lastChild);
+        }
+    }
+
+    function openTable(tabKey) {
+        for (let tabcontent of document.getElementsByClassName("tabcontent"))
+            tabcontent.style.display = "none";
+        for (let tablinks of document.getElementsByClassName("tablinks"))
+            tablinks.className = tablinks.className.replace(" active", "");
+        document.getElementById(tabKey).style.display = "block";
+    }
+
+    function createTab(tabKey, divForTabs) {
+        let btn = document.createElement("button");
+        btn.className = "tablinks";
+        btn.onclick = function (evt) {
+            openTable(tabKey);
+            btn.className += " active";
+        }
+        btn.textContent = tabKey;
+        divForTabs.appendChild(btn);
+    }
+
+    function createOrClearDivForTable(tabKey) {
+        let divForTable = document.getElementById(tabKey);
+        if (divForTable) {
+            removeChildren(divForTable)
+        } else
+            divForTable = document.createElement("div");
+        divForTable.id = tabKey;
+        divForTable.className = "tabcontent";
+        return divForTable;
+    }
+
+    function createHeaderRow(tableForDiv, tableData, sortKey, direction, tabKey) {
+        let newRow = tableForDiv.insertRow();
+        for (let key of Object.keys(tableData[0])) {
+            let newCell = newRow.insertCell();
+            newCell.className = "table-header";
+            if (sortKey === key) {
+                if (direction > 0)
+                    newCell.className = "table-header sort-asc";
+                else
+                    newCell.className = "table-header sort-desc";
+            }
+            newCell.appendChild(document.createTextNode(key));
+            newCell.onclick = function (evt) {
+                let searchDirection = (newCell.className.includes("sort-asc")) ? -1 : 1;
+                for (let tableHeaders of document.getElementsByClassName("table-header"))
+                    tableHeaders.className = "table-header";
+                createTableForDiv(tabKey, tableData, key, searchDirection);
+            }
+        }
+    }
+
+    function createTableForDiv(tabKey, tableData, sortKey, direction) {
+        let divForTable = createOrClearDivForTable(tabKey);
+        sortTable(tableData, sortKey, direction);
+        findReductionsAndDurations(tableData);
+        let tableForDiv = document.createElement("table");
+        if (tableData.length > 0) {
+            createHeaderRow(tableForDiv, tableData, sortKey, direction, tabKey);
+        }
+        populateTable(tableForDiv, tableData);
+        divForTable.appendChild(tableForDiv);
+        return divForTable;
+    }
+
+    function findReductionsAndDurations(tableData) {
+        for (let row of tableData) {
+            row.reduction = (parseFloat(row.asked) - parseFloat(row.asking)) / parseFloat(row.asked);
+            row.daysOn = ((toDate(row.to) - toDate(row.from)) / MS_IN_DAY).toFixed(1);
+        }
+    }
+
+    function sortTable(tableData, sortKey, direction) {
+        if (tableData.length === 0)
+            return;
+        if (isNaN(tableData[0][sortKey]))
+            tableData.sort(function (a, b) {
+                if (a[sortKey] > b[sortKey])
+                    return 1 * direction;
+                else if (a[sortKey] < b[sortKey])
+                    return -1 * direction;
+                return 0;
+            });
+        else
+            tableData.sort((a, b) =>
+                (parseFloat(a[sortKey]) - parseFloat(b[sortKey])) * direction);
+    }
+
+    function populateTable(tableForDiv, tableData) {
+        let reducsDeciles = findDecileArray(tableData.map(a => a.reduction));
+        let durationDeciles = findDecileArray(tableData.map(a => a.daysOn));
+        for (let row of tableData) {
+            let newRow = tableForDiv.insertRow();
+            for (let key of Object.keys(row)) {
+                let newCell = newRow.insertCell();
+                let cellContents = document.createTextNode(row[key]);
+                if (key === "id") {
+                    cellContents = htmlToElement("<a href=\"https://www.gumtree.com/search?search_category=all&q=" + row[key] + "\">" + row[key] + "</a>");
+                } else if ("reduction" === key) {
+                    cellContents = document.createTextNode(parseFloat(row[key] * 100).toFixed(1) + "%");
+                }
+                if (["asking", "asked"].includes(key) && row.reduction > reducsDeciles[8]) {
+                    newCell.className = "btm-quartile";
+                } else {
+                    if (row.daysOn < 4) {
+                        newCell.className = "new-listing";
+                    } else if (row.daysOn < 25) {
+                        if (toDate(row["to"]) < (Date.now() - MS_IN_DAY)) {
+                            newCell.className = "seems-sold";
+                        }
+                    } else if (row.daysOn > durationDeciles[8]) {
+                        newCell.className = "btm-quartile";
+                    }
+                }
+                newCell.appendChild(cellContents);
+            }
+        }
+    }
+
+    const createTabs = (gt_data) => {
+        removeChildren(document.body);
+        let divForTabs = document.createElement("div");
+        divForTabs.className = "tab";
+        document.body.appendChild(divForTabs);
+        Object.keys(gt_data).forEach(function (tabKey) {
+            createTab(tabKey, divForTabs);
+            let divForTable = createTableForDiv(tabKey, gt_data[tabKey], "to", 1);
+            document.body.appendChild(divForTable);
+        })
+    }
+
+    const gt_results = {{ gt_results }}
+
+    createTabs(gt_results)</script>
+</body>
+</html>
