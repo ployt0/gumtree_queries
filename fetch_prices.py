@@ -174,10 +174,10 @@ def index_ads_to_json(index_ads) -> List[Dict[str, Any]]:
 # I find blank results get returned when I run all four together so tend to run
 # just 2 at a time, wait an hour or so, then complete the other two.
 _GT_PARAMS_LIST = [
-    # ("gt_1660_gpu.csv", "https://www.gumtree.com/search?sort=date&search_category=video-cards-sound-cards&q=1660&search_location=uk"),
-    # ("gt_1660_pc.csv", "https://www.gumtree.com/search?sort=date&search_category=desktop-workstation-pcs&q=1660&search_location=uk"),
-    ("gt_2060_gpu.csv", "https://www.gumtree.com/search?sort=date&search_category=video-cards-sound-cards&q=2060&search_location=uk"),
-    ("gt_2060_pc.csv", "https://www.gumtree.com/search?sort=date&search_category=desktop-workstation-pcs&q=2060&search_location=uk")
+    ("gt_1660_gpu.csv", "https://www.gumtree.com/search?sort=date&search_category=video-cards-sound-cards&q=1660&search_location=uk"),
+    ("gt_1660_pc.csv", "https://www.gumtree.com/search?sort=date&search_category=desktop-workstation-pcs&q=1660&search_location=uk"),
+    # ("gt_2060_gpu.csv", "https://www.gumtree.com/search?sort=date&search_category=video-cards-sound-cards&q=2060&search_location=uk"),
+    # ("gt_2060_pc.csv", "https://www.gumtree.com/search?sort=date&search_category=desktop-workstation-pcs&q=2060&search_location=uk")
 ]
 
 
