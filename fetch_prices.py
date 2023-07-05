@@ -118,8 +118,9 @@ def scrape_gumtree(file_name, url):
             pag_next_btn.click()
     driver.close()
     current_row_cnt = len(index_ads.keys())
-    print("Added {} listings to the {} previously found.".format(
-        current_row_cnt - pre_existing_row_cnt, pre_existing_row_cnt))
+    print("At {}, {} listings were added to the {} previously found in {}."
+        .format(search_time, current_row_cnt - pre_existing_row_cnt,
+                pre_existing_row_cnt, file_name))
     with open(file_name, "w", newline='') as f:
         ad_writer = csv.writer(f)
         for id, data in index_ads.items():
